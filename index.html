@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Online Exam Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto p-4">
+        <!-- Portal Selection -->
+        <div id="portalSelection" class="text-center">
+            <h1 class="text-4xl font-bold mb-8 text-blue-700">Online Exam Portal</h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                <button onclick="showPortal('admin')" class="bg-blue-600 text-white p-6 rounded-xl hover:bg-blue-700 transition shadow-lg">
+                    <i class="bi bi-person-workspace text-4xl"></i>
+                    <p class="mt-3 text-xl">Admin Portal</p>
+                </button>
+                <button onclick="showPortal('student')" class="bg-green-600 text-white p-6 rounded-xl hover:bg-green-700 transition shadow-lg">
+                    <i class="bi bi-mortarboard text-4xl"></i>
+                    <p class="mt-3 text-xl">Student Portal</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- Admin Portal -->
+        <div id="adminPortal" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-blue-700">Admin Portal</h2>
+                <button onclick="showPortal('selection')" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                    <i class="bi bi-house-door"></i> Home
+                </button>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div class="mb-4">
+                    <label class="block mb-2 font-semibold">Question:</label>
+                    <textarea id="questionInput" class="w-full p-3 border rounded-lg focus:ring focus:ring-blue-200" rows="3"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2 font-semibold">Options (comma separated):</label>
+                    <input type="text" id="optionsInput" class="w-full p-3 border rounded-lg focus:ring focus:ring-blue-200" placeholder="option1, option2, option3, option4">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2 font-semibold">Correct Answer:</label>
+                    <input type="text" id="correctAnswer" class="w-full p-3 border rounded-lg focus:ring focus:ring-blue-200">
+                </div>
+                <button onclick="addQuestion()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition w-full md:w-auto">
+                    <i class="bi bi-plus-circle"></i> Add Question
+                </button>
+            </div>
+            
+            <!-- Results Section -->
+            <div id="resultsSection" class="mt-6 bg-white p-6 rounded-xl shadow-lg">
+                <h3 class="text-xl font-bold mb-4 text-blue-700">Student Results</h3>
+                <div id="studentResults" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- Student Portal -->
+        <div id="studentPortal" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-green-700">Student Portal</h2>
+                <button onclick="showPortal('selection')" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                    <i class="bi bi-house-door"></i> Home
+                </button>
+            </div>
+            
+            <!-- Student Login -->
+            <div id="studentLogin" class="bg-white p-6 rounded-xl shadow-lg mb-6">
+                <div class="mb-4">
+                    <label class="block mb-2 font-semibold">Student Name:</label>
+                    <input type="text" id="studentName" class="w-full p-3 border rounded-lg focus:ring focus:ring-green-200">
+                </div>
+                <button onclick="startExam()" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition w-full md:w-auto">
+                    Start Exam
+                </button>
+            </div>
+
+            <!-- Exam Section -->
+            <div id="examSection" class="hidden">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <div id="questionDisplay" class="mb-6"></div>
+                    <div id="optionsDisplay" class="space-y-3"></div>
+                    <div id="result" class="mt-6 hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPortal = 'selection';
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let currentStudent = '';
+        let studentResults = [];
+
+        function showPortal(portal) {
+            document.getElementById('portalSelection').classList.add('hidden');
+            document.getElementById('adminPortal').classList.add('hidden');
+            document.getElementById('studentPortal').classList.add('hidden');
+
+            if (portal === 'selection') {
+                document.getElementById('portalSelection').classList.remove('hidden');
+                resetExam();
+            } else if (portal === 'admin') {
+                document.getElementById('adminPortal').classList.remove('hidden');
+                displayStudentResults();
+            } else if (portal === 'student') {
+                document.getElementById('studentPortal').classList.remove('hidden');
+                document.getElementById('studentLogin').classList.remove('hidden');
+                document.getElementById('examSection').classList.add('hidden');
+            }
+            currentPortal = portal;
+        }
+
+        function addQuestion() {
+            const question = document.getElementById('questionInput').value;
+            const options = document.getElementById('optionsInput').value.split(',').map(opt => opt.trim());
+            const correctAnswer = document.getElementById('correctAnswer').value;
+
+            if (question && options.length >= 2 && correctAnswer) {
+                if (!options.includes(correctAnswer)) {
+                    alert('Correct answer must be one of the options!');
+                    return;
+                }
+
+                questions.push({
+                    question: question,
+                    options: options,
+                    correctAnswer: correctAnswer
+                });
+
+                document.getElementById('questionInput').value = '';
+                document.getElementById('optionsInput').value = '';
+                document.getElementById('correctAnswer').value = '';
+
+                alert('Question added successfully!');
+            } else {
+                alert('Please fill all fields correctly!');
+            }
+        }
+
+        function startExam() {
+            const studentNameInput = document.getElementById('studentName').value.trim();
+            if (!studentNameInput) {
+                alert('Please enter your name to start the exam');
+                return;
+            }
+            if (questions.length === 0) {
+                alert('No questions available. Please contact administrator.');
+                return;
+            }
+
+            currentStudent = studentNameInput;
+            document.getElementById('studentLogin').classList.add('hidden');
+            document.getElementById('examSection').classList.remove('hidden');
+            resetExam();
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                showFinalResult();
+                return;
+            }
+
+            const question = questions[currentQuestionIndex];
+            document.getElementById('questionDisplay').innerHTML = `
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-lg font-semibold mb-2">Question ${currentQuestionIndex + 1} of ${questions.length}</p>
+                    <p class="text-gray-800">${question.question}</p>
+                </div>
+            `;
+
+            const optionsDisplay = document.getElementById('optionsDisplay');
+            optionsDisplay.innerHTML = question.options.map(option => `
+                <button 
+                    onclick="checkAnswer('${option}')" 
+                    class="w-full text-left p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition border border-gray-200"
+                >
+                    ${option}
+                </button>
+            `).join('');
+        }
+
+        function checkAnswer(selectedAnswer) {
+            const question = questions[currentQuestionIndex];
+            const isCorrect = selectedAnswer.trim() === question.correctAnswer.trim();
+
+            if (isCorrect) {
+                score++;
+                showFeedback(true);
+            } else {
+                showFeedback(false, question.correctAnswer);
+            }
+
+            setTimeout(() => {
+                currentQuestionIndex++;
+                displayQuestion();
+            }, 1500);
+        }
+
+        function showFeedback(isCorrect, correctAnswer = '') {
+            const feedback = document.createElement('div');
+            feedback.className = `fixed top-4 right-4 p-4 rounded-lg ${isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            feedback.innerHTML = isCorrect 
+                ? '<i class="bi bi-check-circle"></i> Correct!' 
+                : `<i class="bi bi-x-circle"></i> Wrong! Correct answer: ${correctAnswer}`;
+            document.body.appendChild(feedback);
+            setTimeout(() => feedback.remove(), 1500);
+        }
+
+        function showFinalResult() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.classList.remove('hidden');
+            document.getElementById('questionDisplay').innerHTML = '';
+            document.getElementById('optionsDisplay').innerHTML = '';
+            
+            const percentage = (score / questions.length) * 100;
+            const result = {
+                student: currentStudent,
+                score: score,
+                total: questions.length,
+                percentage: percentage,
+                date: new Date().toLocaleDateString()
+            };
+            studentResults.push(result);
+
+            resultDiv.innerHTML = `
+                <div class="text-center p-6 ${percentage >= 60 ? 'bg-green-100' : 'bg-red-100'} rounded-lg">
+                    <h3 class="text-2xl font-bold mb-4">Exam Complete!</h3>
+                    <p class="text-lg mb-2">Student: ${currentStudent}</p>
+                    <p class="text-lg mb-2">Score: ${score}/${questions.length}</p>
+                    <p class="text-lg mb-4">Percentage: ${percentage.toFixed(1)}%</p>
+                    <button onclick="showPortal('selection')" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                        Return Home
+                    </button>
+                </div>
+            `;
+        }
+
+        function displayStudentResults() {
+            const resultsDiv = document.getElementById('studentResults');
+            if (studentResults.length === 0) {
+                resultsDiv.innerHTML = '<p class="text-gray-500">No results available yet.</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = studentResults.map(result => `
+                <div class="border p-4 rounded-lg ${result.percentage >= 60 ? 'bg-green-50' : 'bg-red-50'}">
+                    <p class="font-semibold">${result.student}</p>
+                    <p>Score: ${result.score}/${result.total} (${result.percentage.toFixed(1)}%)</p>
+                    <p class="text-sm text-gray-600">Date: ${result.date}</p>
+                </div>
+            `).join('');
+        }
+
+        function resetExam() {
+            currentQuestionIndex = 0;
+            score = 0;
+            document.getElementById('result').classList.add('hidden');
+        }
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
